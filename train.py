@@ -6,7 +6,7 @@ import os
 import llm
 import util
 
-from constants import USERS, MESSAGE_DB_PATH, MESSAGE_BATCH_SIZE
+from constants import USERS, MESSAGE_DB_PATH, MESSAGE_BATCH_SIZE, LLAMA_HOSTS
 
 
 # =================================================================================================
@@ -21,25 +21,25 @@ for username, name, user_id, _ in USERS:
 # =================================================================================================
 # Analysis
 
-async def analyse_traits(rendered, person):
-    return await llm.generate(f"You are reading a discord chat history. You will describe the personality and character traits of the person '{person}'. Your output will only be a single line and nothing else.", rendered)
+async def analyse_traits(host, rendered, person):
+    return await llm.generate(host, f"You are reading a discord chat history. You will describe the personality and character traits of the person '{person}'. Your output will only be a single line and nothing else.", rendered)
 
-async def analyse_facts(rendered, person):
-    return await llm.generate(f"You are reading a discord chat history. You will describe a list of facts about '{person}'. Each fact will be displayed on a line starting with '*'.", rendered)
+async def analyse_facts(host, rendered, person):
+    return await llm.generate(host, f"You are reading a discord chat history. You will describe a list of facts about '{person}'. Each fact will be displayed on a line starting with '*'.", rendered)
 
-async def analyse_relationships(rendered, person):
-    return await llm.generate(f"You are reading a discord chat history. You will describe the way in which the person '{person}' relates to other people in the chat. Your output will only be a single line and nothing else.", rendered)
+async def analyse_relationships(host, rendered, person):
+    return await llm.generate(host, f"You are reading a discord chat history. You will describe the way in which the person '{person}' relates to other people in the chat. Your output will only be a single line and nothing else.", rendered)
 
-async def find_best_example(rendered, person):
-    return await llm.generate(f"Below is a list of messages sent by '{person}'. Find the one that best represents {person}'s texting style and repeat it below. You will not respond with anything except this single message.", rendered)
+async def find_best_example(host, rendered, person):
+    return await llm.generate(host, f"Below is a list of messages sent by '{person}'. Find the one that best represents {person}'s texting style and repeat it below. You will not respond with anything except this single message.", rendered)
 
-async def analyse_if_not_already(path, func, rendered, person):
+async def analyse_if_not_already(path, func, host, rendered, person):
     util.create_dir_if_not_exists(os.path.dirname(path))
 
     if os.path.isfile(path):
         return
 
-    res = await func(rendered, person)
+    res = await func(host, rendered, person)
 
     print("==================")
     print(path)
@@ -54,10 +54,14 @@ async def analyse_person(msgs, person):
 
     batch_hash = util.md5(rendered)
 
-    await analyse_if_not_already(f"observations/{person}/traits/{batch_hash}", analyse_traits, rendered, person)
-    await analyse_if_not_already(f"observations/{person}/facts/{batch_hash}", analyse_facts, rendered, person)
-    await analyse_if_not_already(f"observations/{person}/relationships/{batch_hash}", analyse_relationships, rendered, person)
-    await analyse_if_not_already(f"observations/{person}/examples/{batch_hash}", find_best_example, persons_messages, person)
+    await asyncio.gather(
+        analyse_if_not_already(f"observations/{person}/traits/{batch_hash}", analyse_traits, LLAMA_HOSTS[1], rendered, person),
+        analyse_if_not_already(f"observations/{person}/relationships/{batch_hash}", analyse_relationships, LLAMA_HOSTS[0], rendered, person)
+    )
+    await asyncio.gather(
+        analyse_if_not_already(f"observations/{person}/facts/{batch_hash}", analyse_facts, LLAMA_HOSTS[1], rendered, person),
+        analyse_if_not_already(f"observations/{person}/examples/{batch_hash}", find_best_example, LLAMA_HOSTS[0], persons_messages, person)
+    )
 
 # =================================================================================================
 # Messages

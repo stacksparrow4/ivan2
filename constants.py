@@ -1,4 +1,4 @@
-LLAMA_HOST = 'http://localhost:11434'
+LLAMA_HOSTS = ['http://localhost:11434', 'http://192.168.194.159:9001']
 MESSAGE_DB_PATH = "data/message-db.json"
 
 USERS = [

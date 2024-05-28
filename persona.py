@@ -3,7 +3,7 @@ import re
 
 import llm
 
-from constants import USERS
+from constants import USERS, LLAMA_HOSTS
 
 name_to_pronoun = {}
 for _, name, _, pronoun in USERS:
@@ -25,7 +25,11 @@ def get_persona_info(persona, info_type):
     
     return "\n".join(info)
 
+round_robin_host = 0
+
 async def respond_as_persona(persona, prompt):
+    global round_robin_host
+
     facts = extract_dot_points(get_persona_info(persona, 'facts'))
 
     system = f"""You are pretending to be the person {persona}. The following data provides information on {persona}'s character traits:
@@ -46,4 +50,6 @@ Below is a list of example messages sent by {persona}:
 
 Respond to the following prompt as if you are {persona}. Remember to copy {persona}'s message length, capitalisation, and tone of voice."""
     
-    return await llm.generate(system, prompt)
+    round_robin_host = (round_robin_host + 1) % len(LLAMA_HOSTS)
+
+    return await llm.generate(LLAMA_HOSTS[round_robin_host], system, prompt)

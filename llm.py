@@ -1,13 +1,11 @@
 import aiohttp
 
-from constants import LLAMA_HOST
-
 global_sess = None
 
 async def close():
     await global_sess.close()
 
-async def generate(system, prompt):
+async def generate(host, system, prompt):
     global global_sess
     if global_sess is None:
         global_sess = aiohttp.ClientSession()
@@ -19,6 +17,6 @@ async def generate(system, prompt):
         "stream": False
     }
 
-    async with global_sess.post(f"{LLAMA_HOST}/api/generate", json=payload) as resp:
+    async with global_sess.post(f"{host}/api/generate", json=payload) as resp:
         data = await resp.json()
         return data["response"]
