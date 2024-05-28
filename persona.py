@@ -3,17 +3,9 @@ import random
 
 import llm
 import util
+import messages
 
-from constants import USERS, LLAMA_HOSTS
-
-target_host = LLAMA_HOSTS[-1]
-
-user_names = [u[1] for u in USERS]
-name_to_pronoun = {}
-user_id_to_name = {}
-for _, name, uid, pronoun in USERS:
-    name_to_pronoun[name] = pronoun
-    user_id_to_name[uid] = name
+msg_db, user_db = messages.load()
 
 def read_all_files_in_dir(dir_path):
     info = []
@@ -25,22 +17,20 @@ def read_all_files_in_dir(dir_path):
     return "\n".join(info)
 
 async def get_persona_facts(persona):
-    return util.extract_dot_points(read_all_files_in_dir(f"system/{persona}/facts"))
+    return util.extract_dot_points(read_all_files_in_dir(f"collated/{persona}"))
 
 async def get_persona_examples(persona):
-    return "\n".join(random.sample([l for l in read_all_files_in_dir(f"observations/{persona}/examples").splitlines() if l.strip()], 40))
+    return "\n".join(random.sample([m[1] for m in msg_db if m[0] == persona], 40))
 
 async def respond_as_persona(persona, prompt):
-    system = f"""You are pretending to be the person {persona}. Below is a list of facts about {persona}:
+    system = f"""You are pretending to be the person '{persona}'. Below is a list of facts about '{persona}':
 
 {await get_persona_facts(persona)}
 
-Below is a list of example messages sent by {persona}:
+Below is a list of example messages sent by '{persona}':
 
 {await get_persona_examples(persona)}
 
-Respond to the following message as if you were {persona}. Remember to copy {persona}'s texting style as shown in the examples."""
-    
-    print(system)
+Respond to the following message as if you were '{persona}'. Remember to copy the texting style of '{persona}' as shown in the examples."""
 
-    return await llm.generate(LLAMA_HOSTS[-1], system, prompt)
+    return await llm.generate(os.environ.get("LLAMA_HOSTS").split(",")[0].strip(), system, prompt)
