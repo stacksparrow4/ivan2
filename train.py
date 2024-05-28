@@ -21,25 +21,29 @@ for username, name, user_id, _ in USERS:
 # =================================================================================================
 # Analysis
 
-async def analyse_traits(host, rendered, person):
+async def analyse_traits(host, batch, person):
+    rendered = render_messages(batch)
     return await llm.generate(host, f"You are reading a discord chat history. You will describe the personality and character traits of the person '{person}'. Your output will only be a single line and nothing else.", rendered)
 
-async def analyse_facts(host, rendered, person):
+async def analyse_facts(host, batch, person):
+    rendered = render_messages(batch)
     return await llm.generate(host, f"You are reading a discord chat history. You will describe a list of facts about '{person}'. Each fact will be displayed on a line starting with '*'.", rendered)
 
-async def analyse_relationships(host, rendered, person):
+async def analyse_relationships(host, batch, person):
+    rendered = render_messages(batch)
     return await llm.generate(host, f"You are reading a discord chat history. You will describe the way in which the person '{person}' relates to other people in the chat. Your output will only be a single line and nothing else.", rendered)
 
-async def find_best_example(host, rendered, person):
-    return await llm.generate(host, f"Below is a list of messages sent by '{person}'. Find the one that best represents {person}'s texting style and repeat it below. You will not respond with anything except this single message.", rendered)
+async def find_best_example(host, batch, person):
+    persons_messages = "\n".join([m[1] for m in batch if m[0] == person])
+    return await llm.generate(host, f"Below is a list of messages sent by '{person}'. Find the one that best represents {person}'s texting style and repeat it below. You will not respond with anything except this single message.", persons_messages)
 
-async def analyse_if_not_already(path, func, host, rendered, person):
+async def analyse_if_not_already(host, func, path, batch, person):
     util.create_dir_if_not_exists(os.path.dirname(path))
 
     if os.path.isfile(path):
         return
 
-    res = await func(host, rendered, person)
+    res = await func(host, batch, person)
 
     print("==================")
     print(path)
@@ -48,19 +52,38 @@ async def analyse_if_not_already(path, func, host, rendered, person):
     with open(path, "w") as f:
         f.write(res)
 
-async def analyse_person(msgs, person):
-    rendered = render_messages(msgs)
-    persons_messages = "\n".join([m[1] for m in msgs if m[0] == person])
 
-    batch_hash = util.md5(rendered)
+analysis_progress = 0
+analysis_max_progress = 0
+analysis_queue = []
 
+def queue_analysis(analysis_func, write_path, batch, person):
+    global analysis_max_progress
+    analysis_queue.append((analysis_func, write_path, batch, person))
+    analysis_max_progress += 1
+
+async def queue_analyse_person(batch, person):
+    batch_hash = util.md5(render_messages(batch))
+
+    queue_analysis(analyse_traits, f"observations/{person}/traits/{batch_hash}", batch, person)
+    queue_analysis(analyse_facts, f"observations/{person}/facts/{batch_hash}", batch, person)
+    queue_analysis(analyse_relationships, f"observations/{person}/relationships/{batch_hash}", batch, person)
+    queue_analysis(find_best_example, f"observations/{person}/examples/{batch_hash}", batch, person)
+
+async def complete_analysis_worker(host):
+    global analysis_progress
+
+    while len(analysis_queue) != 0:
+        analysis_func, write_path, batch, person = analysis_queue.pop(0)
+
+        await analyse_if_not_already(host, analysis_func, write_path, batch, person)
+
+        analysis_progress += 1
+        print(f"Progress update:\t{analysis_progress}/{analysis_max_progress} ({'{:.2f}'.format(100 * analysis_progress / analysis_max_progress)}%)")
+
+async def complete_analysis():
     await asyncio.gather(
-        analyse_if_not_already(f"observations/{person}/traits/{batch_hash}", analyse_traits, LLAMA_HOSTS[1], rendered, person),
-        analyse_if_not_already(f"observations/{person}/relationships/{batch_hash}", analyse_relationships, LLAMA_HOSTS[0], rendered, person)
-    )
-    await asyncio.gather(
-        analyse_if_not_already(f"observations/{person}/facts/{batch_hash}", analyse_facts, LLAMA_HOSTS[1], rendered, person),
-        analyse_if_not_already(f"observations/{person}/examples/{batch_hash}", find_best_example, LLAMA_HOSTS[0], persons_messages, person)
+        *[complete_analysis_worker(h) for h in LLAMA_HOSTS]
     )
 
 # =================================================================================================
@@ -92,15 +115,13 @@ async def main():
     msg_db = load_message_db()
     msg_db = clean_message_db(msg_db)
 
-    total_batches = len(msg_db) // MESSAGE_BATCH_SIZE + 1
-
     for i, batch in enumerate(util.generate_batches(msg_db, MESSAGE_BATCH_SIZE)):
         users_in_batch = list(set([m[0] for m in batch]))
 
         for user in users_in_batch:
-            await analyse_person(batch, user)
-        
-        print(f"Progress update:\t{i}/{total_batches} ({'{:.2f}'.format(100 * i / total_batches)}%)")
+            await queue_analyse_person(batch, user)
+    
+    await complete_analysis()
 
     await llm.close()
 
