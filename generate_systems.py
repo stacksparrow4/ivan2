@@ -23,7 +23,7 @@ def get_persona_info(persona, info_type):
     
     return "\n".join(info)
 
-NUM_FACT_GENERATIONS = 10
+NUM_FACT_GENERATIONS = 30
 
 async def main():
     queue = llm_queue.LLMQueue()
@@ -31,7 +31,7 @@ async def main():
     for u in user_names:
         # Traits
         persona_traits = get_persona_info(u, 'traits')
-        queue.enqueue_job((f"system/{u}/traits", "Summarise the character traits listed. Provide as much detail as possible.", persona_traits))
+        queue.enqueue_job(f"system/{u}/traits", "Summarise the character traits listed. Provide as much detail as possible.", persona_traits)
 
         # Facts
         facts = util.extract_dot_points(get_persona_info(u, 'facts'))
@@ -40,7 +40,7 @@ async def main():
         batch_size = len(fact_lines) // (NUM_FACT_GENERATIONS - 1)
 
         for i, batch in enumerate(util.generate_batches(fact_lines, batch_size)):
-            queue.enqueue_job((f"system/{u}/facts/{i}", f"Repeat the below facts about {u}, removing any that are unimportant.", "\n".join(batch)))
+            queue.enqueue_job(f"system/{u}/facts/{i}", f"Repeat the below facts about {u}, removing any that are unimportant.", "\n".join(batch))
     
     await queue.process_queue(recompute=True)
 

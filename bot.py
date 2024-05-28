@@ -49,6 +49,9 @@ async def on_message(message):
         async with message.channel.typing():
             resp = await persona.respond_as_persona(matched_persona, author_name, parts[2])
         
+        for emoji in message.guild.emojis:
+            resp = resp.replace(f":{emoji.name}:", f"<:{emoji.name}:{emoji.id}>")
+
         await message.reply(resp)
     else:
         await message.reply("Usage: .cook <PERSONA> <MESSAGE>")

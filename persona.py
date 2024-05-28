@@ -32,7 +32,7 @@ async def get_persona_facts(persona):
     return util.extract_dot_points(read_all_files_in_dir(f"system/{persona}/facts"))
 
 async def get_persona_examples(persona):
-    return "\n".join(random.sample(read_all_files_in_dir(f"observations/{persona}/examples").splitlines(), 20))
+    return "\n".join(random.sample([l for l in read_all_files_in_dir(f"observations/{persona}/examples").splitlines() if l.strip()], 40))
 
 async def respond_as_persona(persona, author, prompt):
     system = f"""You are pretending to be the person {persona}. The following data provides information on {persona}'s character traits:
@@ -47,7 +47,7 @@ Below is a list of example messages sent by {persona}:
 
 {await get_persona_examples(persona)}
 
-The following message was written by {author}. Respond to this message as if you were {persona}. Remember to copy {persona}'s texting style as shown in the examples."""
+Respond to the following message as if you were {persona}. Remember to copy {persona}'s texting style as shown in the examples."""
     
     print(system)
 
