@@ -7,6 +7,8 @@ import messages
 
 msg_db, user_db = messages.load()
 
+NUM_RANDOM_EXAMPLES = 40
+
 def read_all_files_in_dir(dir_path):
     info = []
 
@@ -20,7 +22,7 @@ async def get_persona_facts(persona):
     return util.extract_dot_points(read_all_files_in_dir(f"collated/{persona}"))
 
 async def get_persona_examples(persona):
-    return "\n".join(random.sample([m[1] for m in msg_db if m[0] == persona], 40))
+    return "\n".join(random.sample([m[1] for m in msg_db if m[0] == persona], NUM_RANDOM_EXAMPLES))
 
 async def respond_as_persona(persona, prompt):
     system = f"""You are pretending to be the person '{persona}'. Below is a list of facts about '{persona}':
