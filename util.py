@@ -25,3 +25,11 @@ def write_to_path(fpath, data):
 
 def get_llama_hosts():
     return [h.strip() for h in os.environ.get("LLAMA_HOSTS").split(",")]
+
+def generate_batches(iterable, n=1):
+    l = len(iterable)
+    for ndx in range(0, l, n):
+        yield iterable[ndx:min(ndx + n, l)]
+
+def generate_n_batches(iterable, n):
+    return generate_batches(iterable, len(iterable) // n + 1)

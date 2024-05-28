@@ -9,8 +9,7 @@ import llm_queue
 import util
 import messages
 
-MAX_FACT_GENERATIONS = 20
-MIN_INPUT_LINES = 30
+MIN_INPUT_LINES = 100
 MESSAGE_CONTEXT = 5
 
 def get_message_chains_by_user(msg_db, user):
@@ -42,15 +41,8 @@ async def main():
         message_chains = get_message_chains_by_user(msg_db, name)
         if len(message_chains) == 0:
             continue
-        
-        # We want to join so that:
-        # Firstly, each chunk is at least MIN_INPUT_LINES
-        # Also there are no more than MAX_FACT_GENERATIONS
 
-        while len(message_chains) > 1 and (
-                any([len(chain) < MIN_INPUT_LINES for chain in message_chains]) 
-                or len(message_chains) > MAX_FACT_GENERATIONS
-            ):
+        while len(message_chains) > 1 and any([len(chain) < MIN_INPUT_LINES for chain in message_chains]):
             line_counts = [(i, len(chain)) for i, chain in enumerate(message_chains)]
             line_counts.sort(key=lambda _: _[1])
             first_ind = line_counts[0][0]
@@ -61,20 +53,15 @@ async def main():
             second_lowest_line_count = message_chains.pop(second_ind)
 
             message_chains.append([*lowest_line_count, '---', *second_lowest_line_count])
-        
-        print(message_chains)
 
+        for chain in message_chains:
+            rendered = messages.render_messages(chain)
+            hashed = util.md5(rendered)
 
-    # for batch in util.generate_n_chunks(msg_db, FACTS_BATCH_SIZE):
-    #     rendered = messages.render_messages(batch)
-    #     batch_hash = util.md5(rendered)
-    #     users_in_batch = list(set([m[0] for m in batch]))
-
-    #     for user in users_in_batch:
-    #         queue.enqueue_job(f"observations/{user}/{batch_hash}", f"You are reading a discord chat history. You will describe a list of facts about '{user}'. Each fact will be displayed on a line starting with '*'.", rendered)
+            queue.enqueue_job(f"observations/{name}/{hashed}", f"You are reading a chat history in which the participant '{name}' is involved. You will describe a list of facts about the person '{name}', and only '{name}'. This information will be displayed as dot points.", rendered)
     
-    # await queue.process_queue()
+    await queue.process_queue()
 
-    # await llm.close()
+    await llm.close()
 
 asyncio.run(main())

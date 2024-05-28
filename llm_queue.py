@@ -19,8 +19,6 @@ class LLMQueue:
             path, system, prompt = self.queue[self.ind]
             self.ind += 1
 
-            util.create_dir_if_not_exists(os.path.dirname(path))
-
             if recompute or not os.path.isfile(path):
                 res = await llm.generate(host, system, prompt)
 
@@ -29,16 +27,15 @@ class LLMQueue:
                     print(path)
                     print(res)
 
-                with open(path, "w") as f:
-                    f.write(res)
+                util.write_to_path(path, res)
                 
                 curr_prog = (100 * self.ind) // len(self.queue)
                 if curr_prog != self.last_progress:
-                    print(f"{curr_prog}%")
+                    print(f"\nProgress Update:\t{curr_prog}%\n")
             
             self.last_progress = (100 * self.ind) // len(self.queue)
 
     async def process_queue(self, recompute=False):
         assert self.ind == 0
 
-        await asyncio.gather(*[self.process_queue_with_host(host, recompute) for host in os.environ.get("LLAMA_HOSTS")])
+        await asyncio.gather(*[self.process_queue_with_host(host.strip(), recompute) for host in os.environ.get("LLAMA_HOSTS").split(",")])

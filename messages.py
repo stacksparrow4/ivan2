@@ -48,4 +48,4 @@ def load():
     return clean_message_db(load_message_db(), user_db), user_db
 
 def render_messages(msgs):
-    return "\n".join([": ".join(msg) for msg in msgs])
+    return "\n".join([msg if type(msg) == str else ": ".join(msg) for msg in msgs])
