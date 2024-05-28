@@ -50,6 +50,4 @@ async def on_message(message):
     else:
         await message.reply(f"Usage:\n\n{msg_prefix} <PERSONA>\n<PROMPT>")
 
-with open("token", "r") as f:
-    token = f.read().strip()
-client.run(token)
+client.run(os.environ.get("BOT_TOKEN"))

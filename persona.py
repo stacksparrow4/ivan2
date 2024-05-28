@@ -33,4 +33,4 @@ Below is a list of example messages sent by '{persona}':
 
 Respond to the following message as if you were '{persona}'. Remember to copy the texting style of '{persona}' as shown in the examples."""
 
-    return await llm.generate(os.environ.get("LLAMA_HOSTS").split(",")[0].strip(), system, prompt)
+    return await llm.generate(util.get_llama_hosts()[0], system, prompt)

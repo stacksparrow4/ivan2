@@ -38,4 +38,4 @@ class LLMQueue:
     async def process_queue(self, recompute=False):
         assert self.ind == 0
 
-        await asyncio.gather(*[self.process_queue_with_host(host.strip(), recompute) for host in os.environ.get("LLAMA_HOSTS").split(",")])
+        await asyncio.gather(*[self.process_queue_with_host(host.strip(), recompute) for host in util.get_llama_hosts()])

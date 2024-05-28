@@ -43,7 +43,4 @@ async def on_ready():
 
     await client.close()
 
-with open("token", "r") as f:
-    token = f.read().strip()
-
-client.run(token)
+client.run(os.environ.get("BOT_TOKEN"))
