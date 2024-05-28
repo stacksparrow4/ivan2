@@ -1,33 +1,16 @@
-import aiohttp
 import asyncio
 import json
 import re
-import hashlib
 import os
 
-from pathlib import Path
+import llm
+import util
 
-# =================================================================================================
-# Constants
+from constants import USERS, MESSAGE_DB_PATH, MESSAGE_BATCH_SIZE
 
-LLAMA_HOST = 'http://localhost:11434'
-MESSAGE_DB_PATH = "data/message-db.json"
-
-USERS = [
-    ("ssparrow", "Daniel", 485713672161722379),
-    ("mimedc", "Pri", 772428196191666187),
-    ("kitkadesa", "Nat", 180220266272653312),
-    ("merlune", "Helen", 655635072309002252),
-    ("itsironiciinsist", "Zac", 315013788342419457),
-    ("babybeefier", "Colleen", 219061332442349568)
-]
-
-MESSAGE_BATCH_SIZE = 100
 
 # =================================================================================================
 # Global vars
-
-global_sess = None
 
 username_to_name = {}
 user_id_to_name = {}
@@ -36,36 +19,10 @@ for username, name, user_id in USERS:
     user_id_to_name[user_id] = name
 
 # =================================================================================================
-# Utils
-
-def create_dir_if_not_exists(dir_name):
-    Path(dir_name).mkdir(parents=True, exist_ok=True)
-
-def md5(data):
-    return hashlib.md5(data.encode()).hexdigest()
-
-def generate_batches(iterable, n=1):
-    l = len(iterable)
-    for ndx in range(0, l, n):
-        yield iterable[ndx:min(ndx + n, l)]
-
-# =================================================================================================
-# Llama
-
-async def generate_llm(system, prompt):
-    payload = {
-        "model": "llama3",
-        "system": system,
-        "prompt": prompt,
-        "stream": False
-    }
-
-    async with global_sess.post(f"{LLAMA_HOST}/api/generate", json=payload) as resp:
-        data = await resp.json()
-        return data["response"]
+# LLM
 
 async def describe_person(msgs, person):
-    return await generate_llm(f"You are reading a discord chat history. You will output a description of the person '{person}' and nothing else.", render_messages(msgs))
+    return await llm.generate(f"You are reading a discord chat history. You will output a description of the person '{person}' and nothing else.", render_messages(msgs))
 
 # =================================================================================================
 # Messages
@@ -94,15 +51,15 @@ def render_messages(msgs):
 
 async def main():
     for _, name, _ in USERS:
-        create_dir_if_not_exists(f"observations/{name}")
+        util.create_dir_if_not_exists(f"observations/{name}")
 
     msg_db = load_message_db()
     msg_db = clean_message_db(msg_db)
 
-    total_batches = len(msg_db)//MESSAGE_BATCH_SIZE + 1
+    total_batches = len(msg_db) // MESSAGE_BATCH_SIZE + 1
 
-    for i, batch in enumerate(generate_batches(msg_db, MESSAGE_BATCH_SIZE)):
-        batch_hash = md5(render_messages(batch))
+    for i, batch in enumerate(util.generate_batches(msg_db, MESSAGE_BATCH_SIZE)):
+        batch_hash = util.md5(render_messages(batch))
         users_in_batch = list(set([m[0] for m in batch]))
 
         for user in users_in_batch:
@@ -121,11 +78,10 @@ async def main():
         print(f"Progress update:\t{i}/{total_batches} ({'{:.2f}'.format(100 * i / total_batches)}%)")
 
 async def main_wrapper():
-    global global_sess
-    global_sess = aiohttp.ClientSession()
+    await llm.init()
     
     await main()
 
-    await global_sess.close()
+    await llm.close()
 
 asyncio.run(main_wrapper())
