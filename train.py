@@ -99,7 +99,9 @@ async def main():
     msg_db = load_message_db()
     msg_db = clean_message_db(msg_db)
 
-    for batch in generate_batches(msg_db, MESSAGE_BATCH_SIZE):
+    total_batches = len(msg_db)//MESSAGE_BATCH_SIZE + 1
+
+    for i, batch in enumerate(generate_batches(msg_db, MESSAGE_BATCH_SIZE)):
         batch_hash = md5(render_messages(batch))
         users_in_batch = list(set([m[0] for m in batch]))
 
@@ -107,13 +109,16 @@ async def main():
             f_path = f"observations/{user}/{batch_hash}"
 
             if os.path.isfile(f_path):
+                print(f"Skipping:\t{f_path}")
                 continue
 
             desc = await describe_person(batch, user)
             with open(f_path, "w") as f:
                 f.write(desc)
             
-            print(f_path)
+            print(f"Generated:\t{f_path}")
+        
+        print(f"Progress update:\t{i}/{total_batches} ({'{:.2f}'.format(100 * i / total_batches)}%)")
 
 async def main_wrapper():
     global global_sess
