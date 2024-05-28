@@ -23,8 +23,6 @@ class LLMQueue:
 
             util.create_dir_if_not_exists(os.path.dirname(path))
 
-            curr_prog = (100 * self.ind) // len(self.queue)
-
             if recompute or not os.path.isfile(path):
                 res = await llm.generate(host, system, prompt)
 
@@ -36,10 +34,11 @@ class LLMQueue:
                 with open(path, "w") as f:
                     f.write(res)
                 
+                curr_prog = (100 * self.ind) // len(self.queue)
                 if curr_prog != self.last_progress:
                     print(f"{curr_prog}%")
             
-            self.last_progress = curr_prog
+            self.last_progress = (100 * self.ind) // len(self.queue)
 
     async def process_queue(self, recompute=False):
         assert self.ind == 0
