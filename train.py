@@ -29,10 +29,6 @@ async def analyse_facts(host, batch, person):
     rendered = render_messages(batch)
     return await llm.generate(host, f"You are reading a discord chat history. You will describe a list of facts about '{person}'. Each fact will be displayed on a line starting with '*'.", rendered)
 
-async def analyse_relationships(host, batch, person):
-    rendered = render_messages(batch)
-    return await llm.generate(host, f"You are reading a discord chat history. You will describe the way in which the person '{person}' relates to other people in the chat. Your output will only be a single line and nothing else.", rendered)
-
 async def find_best_example(host, batch, person):
     persons_messages = "\n".join([m[1] for m in batch if m[0] == person])
     return await llm.generate(host, f"Below is a list of messages sent by '{person}'. Find the one that best represents {person}'s texting style and repeat it below. You will not respond with anything except this single message.", persons_messages)
@@ -67,7 +63,6 @@ async def queue_analyse_person(batch, person):
 
     queue_analysis(analyse_traits, f"observations/{person}/traits/{batch_hash}", batch, person)
     queue_analysis(analyse_facts, f"observations/{person}/facts/{batch_hash}", batch, person)
-    queue_analysis(analyse_relationships, f"observations/{person}/relationships/{batch_hash}", batch, person)
     queue_analysis(find_best_example, f"observations/{person}/examples/{batch_hash}", batch, person)
 
 async def complete_analysis_worker(host):
