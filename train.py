@@ -24,6 +24,9 @@ for username, name, user_id, _ in USERS:
 async def analyse_traits(rendered, person):
     return await llm.generate(f"You are reading a discord chat history. You will describe the personality and character traits of the person '{person}'. Your output will only be a single line and nothing else.", rendered)
 
+async def analyse_facts(rendered, person):
+    return await llm.generate(f"You are reading a discord chat history. You will describe a list of facts about '{person}'. Each fact will be displayed on a line starting with '*'.", rendered)
+
 async def analyse_relationships(rendered, person):
     return await llm.generate(f"You are reading a discord chat history. You will describe the way in which the person '{person}' relates to other people in the chat. Your output will only be a single line and nothing else.", rendered)
 
@@ -52,6 +55,7 @@ async def analyse_person(msgs, person):
     batch_hash = util.md5(rendered)
 
     await analyse_if_not_already(f"observations/{person}/traits/{batch_hash}", analyse_traits, rendered, person)
+    await analyse_if_not_already(f"observations/{person}/facts/{batch_hash}", analyse_facts, rendered, person)
     await analyse_if_not_already(f"observations/{person}/relationships/{batch_hash}", analyse_relationships, rendered, person)
     await analyse_if_not_already(f"observations/{person}/examples/{batch_hash}", find_best_example, persons_messages, person)
 
