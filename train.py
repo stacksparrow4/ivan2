@@ -22,7 +22,7 @@ for username, name, user_id in USERS:
 # LLM
 
 async def describe_person(msgs, person):
-    return await llm.generate(f"You are reading a discord chat history. You will output a description of the person '{person}' and nothing else.", render_messages(msgs))
+    return await llm.generate(f"You are reading a discord chat history. You will output a description of the person '{person}'. After the description, you will also output a single example message that represents {person}'s texting style.", render_messages(msgs))
 
 # =================================================================================================
 # Messages
@@ -33,7 +33,7 @@ def load_message_db():
 
 def clean_message_db(msg_db):
     for m in msg_db:
-        m["content"] = re.sub(r"<(:[^:]+:)[0-9]+>", r"\1", m["content"])
+        m["content"] = re.sub(r"<a?(:[^:]+:)[0-9]+>", r"\1", m["content"])
         for uid in user_id_to_name:
             m["content"] = m["content"].replace(f"<@{uid}>", f"@{user_id_to_name[uid]}")
 
@@ -71,6 +71,7 @@ async def main():
 
             desc = await describe_person(batch, user)
             with open(f_path, "w") as f:
+                print(desc)
                 f.write(desc)
             
             print(f"Generated:\t{f_path}")
