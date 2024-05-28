@@ -1,12 +1,13 @@
-import asyncio
 import discord
 
-import llm
 import persona
 
 from constants import USERS, ALLOWED_CHANNELS
 
 user_names = [u[1] for u in USERS]
+user_id_to_name = {}
+for _, name, uid, pronoun in USERS:
+    user_id_to_name[uid] = name
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -30,6 +31,12 @@ async def on_message(message):
 
     parts = message.content.split(maxsplit=2)
     if len(parts) == 3:
+        if not message.author.id in user_id_to_name:
+            await message.reply("Error: unrecognised user")
+            return
+        
+        author_name = user_id_to_name[message.author.id]
+
         matched_persona = None
         for u in user_names:
             if u.lower() == parts[1].lower():
@@ -40,7 +47,7 @@ async def on_message(message):
             return
         
         async with message.channel.typing():
-            resp = await persona.respond_as_persona(matched_persona, parts[2])
+            resp = await persona.respond_as_persona(matched_persona, author_name, parts[2])
         
         await message.reply(resp)
     else:

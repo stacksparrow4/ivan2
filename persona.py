@@ -6,8 +6,10 @@ import llm
 from constants import USERS, LLAMA_HOSTS
 
 name_to_pronoun = {}
-for _, name, _, pronoun in USERS:
+user_id_to_name = {}
+for _, name, uid, pronoun in USERS:
     name_to_pronoun[name] = pronoun
+    user_id_to_name[uid] = name
 
 def extract_dot_points(data):
     new_lines = []
@@ -25,11 +27,7 @@ def get_persona_info(persona, info_type):
     
     return "\n".join(info)
 
-round_robin_host = 0
-
-async def respond_as_persona(persona, prompt):
-    global round_robin_host
-
+async def respond_as_persona(persona, author, prompt):
     facts = extract_dot_points(get_persona_info(persona, 'facts'))
 
     system = f"""You are pretending to be the person {persona}. The following data provides information on {persona}'s character traits:
@@ -48,8 +46,6 @@ Below is a list of example messages sent by {persona}:
 
 {get_persona_info(persona, 'examples')}
 
-Respond to the following prompt as if you are {persona}. Remember to copy {persona}'s message length, capitalisation, and tone of voice."""
-    
-    round_robin_host = (round_robin_host + 1) % len(LLAMA_HOSTS)
+The following message was written by {author}. Respond to this message as if you were {persona}. Remember to copy {persona}'s texting style as shown in the examples. The response should be one sentence only."""
 
-    return await llm.generate(LLAMA_HOSTS[round_robin_host], system, prompt)
+    return await llm.generate(LLAMA_HOSTS[-1], system, prompt)
