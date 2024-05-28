@@ -17,7 +17,7 @@ class LLMQueue:
         self.queue.append((path, system, prompt))
     
     async def process_queue_with_host(self, host, recompute):
-        while len(self.queue) > 0:
+        while self.ind < len(self.queue):
             path, system, prompt = self.queue[self.ind]
             self.ind += 1
 

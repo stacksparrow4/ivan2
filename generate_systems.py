@@ -23,7 +23,7 @@ def get_persona_info(persona, info_type):
     
     return "\n".join(info)
 
-NUM_FACT_GENERATIONS = 30
+NUM_FACT_GENERATIONS = 20
 
 async def main():
     queue = llm_queue.LLMQueue()
