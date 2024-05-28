@@ -4,14 +4,14 @@ from constants import LLAMA_HOST
 
 global_sess = None
 
-async def init():
-    global global_sess
-    global_sess = aiohttp.ClientSession()
-
 async def close():
     await global_sess.close()
 
 async def generate(system, prompt):
+    global global_sess
+    if global_sess is None:
+        global_sess = aiohttp.ClientSession()
+
     payload = {
         "model": "llama3",
         "system": system,

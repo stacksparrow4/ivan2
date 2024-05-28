@@ -46,11 +46,6 @@ async def on_message(message):
     else:
         await message.reply("Usage: .cook <PERSONA> <MESSAGE>")
 
-async def main():
-    await llm.init()
-
-    with open("token", "r") as f:
-        token = f.read().strip()
-    await client.start(token)
-
-asyncio.run(main())
+with open("token", "r") as f:
+    token = f.read().strip()
+client.run(token)
