@@ -38,6 +38,8 @@ async def main(token):
         async for msg in client.get_channel(channel).history(limit=None):
             msg_data.append({"author": msg.author.name, "content": msg.content, "time": msg.created_at.timestamp()})
     
+    msg_data = list(reversed(msg_data))
+    
     with open("data/message-db.json", "w") as f:
         json.dump(msg_data, f)
 
