@@ -5,4 +5,5 @@ data/
 observations/
 system/
 
+.env
 token

@@ -1,32 +1,51 @@
 import json
 import re
 
-from constants import USERS, MESSAGE_DB_PATH
-
-username_to_name = {}
-user_id_to_name = {}
-for username, name, user_id, _ in USERS:
-    username_to_name[username] = name
-    user_id_to_name[user_id] = name
-
 def load_message_db():
-    with open(MESSAGE_DB_PATH, "r") as f:
+    with open("data/message-db.json", "r") as f:
         return json.load(f)
 
-def clean_message_db(msg_db):
+def load_users():
+    with open("data/users.json", "r") as f:
+        return json.load(f)
+
+class UserDB:
+    def __init__(self, users):
+        self.users = users
+        self.uid_to_name_dict = {}
+
+        for uname in self.users:
+            self.uid_to_name_dict[self.users[uname]["id"]] = self.users[uname]["name"]
+    
+    def uname_to_name(self, uname):
+        return self.users[uname]["name"]
+    
+    def uid_to_name(self, uid):
+        return self.uid_to_name_dict[uid]
+
+    def names(self):
+        return [self.users[uname]["name"] for uname in self.users.keys()]
+
+    def uids(self):
+        return [self.users[uname]["id"] for uname in self.users.keys()]
+
+def clean_message_db(msg_db, user_db):
     for m in msg_db:
+        # Emoji
         m["content"] = re.sub(r"<a?(:[^:]+:)[0-9]+>", r"\1", m["content"])
-        for uid in user_id_to_name:
-            m["content"] = m["content"].replace(f"<@{uid}>", f"@{user_id_to_name[uid]}")
+        # User mentions
+        for uid in user_db.uids():
+            m["content"] = m["content"].replace(f"<@{uid}>", f"@{user_db.uid_to_name(uid)}")
 
     return [
-        (username_to_name[m["author"]], m["content"])
+        (user_db.uname_to_name(m["author"]), m["content"])
         for m in msg_db
-        if m['content'] and m['author'] in username_to_name.keys()
+        if m['content'].strip()
     ]
 
 def load():
-    return clean_message_db(load_message_db())
+    user_db = UserDB(load_users())
+    return clean_message_db(load_message_db(), user_db), user_db
 
 def render_messages(msgs):
     return "\n".join([": ".join(msg) for msg in msgs])

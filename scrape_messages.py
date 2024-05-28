@@ -1,8 +1,14 @@
+import asyncio
+import json
+import os
+
 import discord
 
-import asyncio
+from dotenv import load_dotenv
 
-import json
+import util
+
+load_dotenv(override=True)
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -12,35 +18,32 @@ intents.guilds = True
 
 client = discord.Client(intents=intents)
 
-is_ready = False
+CHANNEL_IDS = [int(ch_id.strip()) for ch_id in os.environ.get("SCRAPE_CHANNELS").split(",")]
 
 @client.event
 async def on_ready():
-    global is_ready
-    is_ready = True
+    print("Starting pull...")
 
-CHANNEL_IDS = [1159772223872176208, 1160494482958073876]
+    msg_data = []
+
+    users = {}
+
+    for channel in CHANNEL_IDS:
+        async for msg in client.get_channel(channel).history(limit=None, oldest_first=True):
+            msg_data.append({"author": msg.author.name, "content": msg.content, "time": msg.created_at.timestamp()})
+            users[msg.author.name] = {
+                "name": msg.author.display_name,
+                "id": str(msg.author.id)
+            }
+    
+    util.write_to_path("data/message-db.json", json.dumps(msg_data))
+    util.write_to_path("data/users.json", json.dumps(users))
+
+    print("Finished!")
+
+    await client.close()
 
 with open("token", "r") as f:
     token = f.read().strip()
 
-async def main(token):
-    await client.login(token)
-    
-    asyncio.create_task(client.connect())
-
-    while not is_ready:
-        await asyncio.sleep(0.1)
-
-    msg_data = []
-
-    for channel in CHANNEL_IDS:
-        async for msg in client.get_channel(channel).history(limit=None):
-            msg_data.append({"author": msg.author.name, "content": msg.content, "time": msg.created_at.timestamp()})
-    
-    msg_data = list(reversed(msg_data))
-    
-    with open("data/message-db.json", "w") as f:
-        json.dump(msg_data, f)
-
-asyncio.run(main(token))
+client.run(token)

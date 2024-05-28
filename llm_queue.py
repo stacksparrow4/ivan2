@@ -4,8 +4,6 @@ import asyncio
 import llm
 import util
 
-from constants import LLAMA_HOSTS
-
 class LLMQueue:
     def __init__(self, debug=True):
         self.ind = 0
@@ -43,4 +41,4 @@ class LLMQueue:
     async def process_queue(self, recompute=False):
         assert self.ind == 0
 
-        await asyncio.gather(*[self.process_queue_with_host(host, recompute) for host in LLAMA_HOSTS])
+        await asyncio.gather(*[self.process_queue_with_host(host, recompute) for host in os.environ.get("LLAMA_HOSTS")])

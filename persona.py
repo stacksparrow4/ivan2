@@ -24,22 +24,14 @@ def read_all_files_in_dir(dir_path):
     
     return "\n".join(info)
 
-async def get_persona_traits(persona):
-    with open(f"system/{persona}/traits", "r") as f:
-        return f.read()
-
 async def get_persona_facts(persona):
     return util.extract_dot_points(read_all_files_in_dir(f"system/{persona}/facts"))
 
 async def get_persona_examples(persona):
     return "\n".join(random.sample([l for l in read_all_files_in_dir(f"observations/{persona}/examples").splitlines() if l.strip()], 40))
 
-async def respond_as_persona(persona, author, prompt):
-    system = f"""You are pretending to be the person {persona}. The following data provides information on {persona}'s character traits:
-
-{await get_persona_traits(persona)}
-
-Below is a list of facts about {persona}:
+async def respond_as_persona(persona, prompt):
+    system = f"""You are pretending to be the person {persona}. Below is a list of facts about {persona}:
 
 {await get_persona_facts(persona)}
 
