@@ -10,11 +10,11 @@ services:
     image: ollama/ollama
     volumes:
       - ollama:/root/.ollama
-    deploy: # Uncomment this section to use NVIDIA gpu. You will need to install NVIDIA container runtime.
+    deploy: # Comment this section to use CPU
       resources:
         reservations:
           devices:
-            - driver: nvidia
+            - driver: nvidia # Requires NVIDIA container runtime
               count: all
               capabilities: [gpu]
 
