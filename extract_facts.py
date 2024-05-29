@@ -33,6 +33,8 @@ def get_message_chains_by_user(msg_db, user):
     return message_chains
 
 async def main():
+    await llm.setup()
+
     msg_db, user_db = messages.load()
 
     queue = llm_queue.LLMQueue()

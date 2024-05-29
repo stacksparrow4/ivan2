@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 
 load_dotenv(override=True)
 
+import llm
 import persona
 
 intents = discord.Intents.default()
@@ -19,6 +20,8 @@ whitelisted_channels = [int(ch.strip()) for ch in os.environ.get("WHITELISTED_CH
 @client.event
 async def on_ready():
     print(f"Logged in as {client.user}")
+    
+    await llm.setup()
 
 @client.event
 async def on_message(message):

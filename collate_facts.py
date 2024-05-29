@@ -21,6 +21,8 @@ def get_persona_info(persona, info_type):
 NUM_FACT_GENERATIONS = 20
 
 async def main():
+    await llm.setup()
+
     queue = llm_queue.LLMQueue()
 
     for name in os.listdir("observations"):

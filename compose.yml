@@ -1,0 +1,22 @@
+services:
+  bot:
+    build: .
+    env_file:
+      - .env
+    environment:
+      - LLAMA_HOSTS=http://ollama:11434
+  
+  ollama:
+    image: ollama/ollama
+    volumes:
+      - ollama:/root/.ollama
+    deploy: # Uncomment this section to use NVIDIA gpu. You will need to install NVIDIA container runtime.
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+volumes:
+  ollama:
