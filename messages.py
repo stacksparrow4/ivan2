@@ -29,13 +29,17 @@ class UserDB:
     def uids(self):
         return [self.users[uname]["id"] for uname in self.users.keys()]
 
+def clean_msg(m, user_db):
+    # Emoji
+    m = re.sub(r"<a?(:[^:]+:)[0-9]+>", r"\1", m)
+    # User mentions
+    for uid in user_db.uids():
+        m = m.replace(f"<@{uid}>", f"@{user_db.uid_to_name(uid)}")
+    return m
+
 def clean_message_db(msg_db, user_db):
     for m in msg_db:
-        # Emoji
-        m["content"] = re.sub(r"<a?(:[^:]+:)[0-9]+>", r"\1", m["content"])
-        # User mentions
-        for uid in user_db.uids():
-            m["content"] = m["content"].replace(f"<@{uid}>", f"@{user_db.uid_to_name(uid)}")
+        m["content"] = clean_msg(m["content"], user_db)
 
     return [
         (user_db.uname_to_name(m["author"]), m["content"])
