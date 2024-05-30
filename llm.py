@@ -7,7 +7,7 @@ has_pulled = False
 
 async def setup():
     global global_sess
-    global_sess = aiohttp.ClientSession()
+    global_sess = aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=1000))
 
     print("Downloading llama3...")
 

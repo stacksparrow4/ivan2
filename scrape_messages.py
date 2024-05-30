@@ -31,7 +31,7 @@ async def on_ready():
         async for msg in client.get_channel(channel).history(limit=None, oldest_first=True):
             msg_data.append({"author": msg.author.name, "content": msg.content, "time": msg.created_at.timestamp()})
             users[msg.author.name] = {
-                "name": msg.author.display_name,
+                "name": msg.author.display_name.replace(" ", "-"),
                 "id": str(msg.author.id)
             }
     
