@@ -43,6 +43,4 @@ Respond to the following message as if you were '{persona}'. Remember to copy th
     
     prompt = messages.clean_msg(prompt, user_db)
 
-    print(system)
-
     return await llm.generate(util.get_llama_hosts()[0], system, prompt)
