@@ -59,8 +59,12 @@ async def on_message(message):
         
         chosen_persona = parts[1]
         prompt = parts[2]
-        
-    if not chosen_persona in os.listdir("collated"):
+    
+    for allowed_persona in os.listdir("collated"):
+        if chosen_persona.lower() == allowed_persona.lower():
+            chosen_persona = allowed_persona
+            break
+    else:
         await message.reply("Available personas: " + " ".join(os.listdir("collated")))
         return
     
